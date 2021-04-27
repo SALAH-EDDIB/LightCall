@@ -14,6 +14,7 @@ namespace Persistence
         public DbSet<Order> Order { get; set; }
         public DbSet<Project> Project { get; set; }
         public DbSet<Confirmation> Confirmation { get; set; }
+        public DbSet<OperatorAcc> Operators { get; set; }
 
     }
 }

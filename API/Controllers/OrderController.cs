@@ -15,6 +15,7 @@ using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
 using Persistence;
 using Domain;
+using Microsoft.AspNetCore.Identity;
 
 namespace API.Controllers
 {
@@ -23,14 +24,16 @@ namespace API.Controllers
     public class OrderController : Controller
     {
         private readonly DataContext _context;
+        private UserManager<AppUser> _userManager;
 
-        public OrderController(DataContext context)
+        public OrderController(DataContext context , UserManager<AppUser> userManager) 
         {
             _context = context;
+            _userManager = userManager;
         }
 
 
-       
+
 
         [HttpPost]
         public async Task<JsonResult> ImportFile(IFormFile importFile)
@@ -46,11 +49,11 @@ namespace API.Controllers
                 using (var stream = new MemoryStream())
                 {
                     await importFile.CopyToAsync(stream);
-                    using(var package = new ExcelPackage(stream))
+                    using (var package = new ExcelPackage(stream))
                     {
                         ExcelWorksheet excelWorksheet = package.Workbook.Worksheets[0];
                         var rowcount = excelWorksheet.Dimension.Rows;
-                        for (int row = 2; row < rowcount   ; row++)
+                        for (int row = 2; row < rowcount; row++)
                         {
 
                             orderList.Add(new Order
@@ -72,7 +75,7 @@ namespace API.Controllers
 
 
 
-                
+
 
                 return Json(new { Status = 1, Message = "File Imported Successfully " });
             }
@@ -82,12 +85,74 @@ namespace API.Controllers
             }
 
 
-          
+
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> PutOrder(int id, Order order)
+        {
+            order.Id = id;
+
+            _context.Entry(order).State = EntityState.Modified;
+
+            await _context.SaveChangesAsync();
+
+            return Ok();
+        }
+
+
+
+
+        public async Task<Order> inAsinOrder(int id)
+        {
+
+            string userid = _userManager.GetUserId(User);
+
+            var Operator = await _context.Operators.FindAsync(userid);
+
+            if (!Operator.Status)
+            {
+                var order = await _context.Order.Where(o => o.Id == id).FirstOrDefaultAsync();
+
+                order.Operators.Remove(Operator);
+
+                await _context.SaveChangesAsync();
+
+                return order;
+
+            }
+            return null;
+
         }
 
 
 
 
 
-    }
+        public async Task<Order> asinOrder()
+        {
+
+            string id = _userManager.GetUserId(User);
+
+            var Operator = await _context.Operators.FindAsync(id);
+
+            if (Operator.Status)
+            {
+                var order = await _context.Order.Include(o => o.Status).OrderBy(o => o.Status.StatusPiority).FirstOrDefaultAsync();
+
+                order.Operators.Add(Operator);
+
+                await _context.SaveChangesAsync();
+
+                return order;
+
+            }
+            return null;
+
+        }
+
+
+
+
+        }
 }

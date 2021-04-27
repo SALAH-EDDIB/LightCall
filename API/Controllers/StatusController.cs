@@ -14,11 +14,11 @@ namespace API.Controllers
     public class StatusController : BaseApiController
     {
 
-        private readonly DataContext _context;
+        
 
-        public StatusController(DataContext context)
+        public StatusController()
         {
-            _context = context;
+            
         }
 
         
